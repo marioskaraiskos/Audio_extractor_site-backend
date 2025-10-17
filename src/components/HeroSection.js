@@ -11,7 +11,7 @@ const HeroSection = () => {
       transition={{ duration: 1 }}
     >
       <h1>Audio Extractor</h1>
-      <p>Download audio easily and fast.</p>
+      <p>Download From Youtube And Other Famous Platforms audio easily and fast via URL.</p>
       <a href="https://github.com/marioskaraiskos/Audio_extractor/releases" target="_blank" rel="noreferrer">
         Download for Windows
       </a>
