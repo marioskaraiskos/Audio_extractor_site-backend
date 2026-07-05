@@ -49,13 +49,24 @@ app.post("/extract", apiLimiter, async (req, res) => {
     return res.status(400).json({ error: "URL parameter is missing." });
   }
 
+  // Define shared robust configurations to bypass data-center blocks
+  const ytDlpOptions = {
+    cookies: cookiesPath,
+    noPlaylist: true,
+    noCheckCertificates: true,
+    // Emulate both iOS and standard Android device requests
+    extractorArgs: 'youtube:player_client=ios,android',
+    // Mimic an actual iOS mobile device layout
+    userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1'
+  };
+
+  let ytdlpProcess = null;
+
   try {
-    // 1. ADDED: cookiefile property pointing to your authenticated cookie text file
+    // 1. Fetch metadata using the updated mobile spoof signatures
     const meta = await ytDlp(url, {
+      ...ytDlpOptions,
       dumpJson: true,
-      noPlaylist: true,
-      cookies: cookiesPath,
-      extractorArgs: 'youtube:player_client=default,-android_sdkless' 
     });
 
     const title = sanitizeTitle(meta.title || "audio");
@@ -67,14 +78,16 @@ app.post("/extract", apiLimiter, async (req, res) => {
 
     console.log(`[Production Link] Piping stream for: ${title}`);
 
-    // 2. ADDED: cookiefile flag passed to the stream pipeline too
-    const ytdlpProcess = ytDlp.exec(url, {
+    // 2. Execute binary stream generation safely
+    ytdlpProcess = ytDlp.exec(url, {
+      ...ytDlpOptions,
       output: '-', 
       format: 'bestaudio',
-      noPlaylist: true,
-      cookies: cookiesPath,
-      noCheckCertificates: true,
-      extractorArgs: 'youtube:player_client=default,-android_sdkless' 
+    });
+
+    // Ensure we capture internal runtime errors from the spawned process
+    ytdlpProcess.catch((spawnErr) => {
+      console.error('yt-dlp child process threw an execution error:', spawnErr.message);
     });
 
     ffmpeg(ytdlpProcess.stdout)
@@ -92,12 +105,22 @@ app.post("/extract", apiLimiter, async (req, res) => {
       .pipe(res, { end: true });
 
     req.on('close', () => {
-      ytdlpProcess.kill('SIGTERM');
+      if (ytdlpProcess) {
+        ytdlpProcess.kill('SIGTERM');
+      }
     });
 
   } catch (error) {
     console.error("Metadata discovery failed:", error);
-    return res.status(500).json({ error: "Could not retrieve video information. Render server rate-limited by YouTube." });
+    
+    // Clean up active subprocess if metadata phase worked but processing breaks
+    if (ytdlpProcess) {
+      ytdlpProcess.kill('SIGTERM');
+    }
+
+    return res.status(500).json({ 
+      error: "Could not retrieve video information. Cloud instance rate-limited by target provider." 
+    });
   }
 });
 
