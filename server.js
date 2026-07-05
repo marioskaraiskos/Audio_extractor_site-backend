@@ -9,7 +9,12 @@ import rateLimit from 'express-rate-limit';
 const app = express();
 const PORT = process.env.PORT || 5000; 
 
-// --- FIXED: Trust Render's upstream load balancers and reverse proxies ---
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Resolve the absolute path to your cookies file safely
+const cookiesPath = path.resolve(__dirname, './youtube-cookies.txt');
+
 app.set('trust proxy', 1);
 
 app.use(cors({
@@ -17,8 +22,6 @@ app.use(cors({
   optionsSuccessStatus: 200
 }));
 app.use(express.json());
-
-// --- FIXED: Removed the local static file build paths since the frontend is hosted elsewhere! ---
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, 
@@ -47,11 +50,11 @@ app.post("/extract", apiLimiter, async (req, res) => {
   }
 
   try {
-    // 1. FIXED: Changed client profile extractor args to 'web_creator' or 'ios' or 'tv'
-    // This makes yt-dlp emulate common app devices, which bypasses the data center bot wall.
+    // 1. ADDED: cookiefile property pointing to your authenticated cookie text file
     const meta = await ytDlp(url, {
       dumpJson: true,
       noPlaylist: true,
+      cookiefile: cookiesPath,
       extractorArgs: 'youtube:player_client=ios,web_creator' 
     });
 
@@ -64,11 +67,12 @@ app.post("/extract", apiLimiter, async (req, res) => {
 
     console.log(`[Production Link] Piping stream for: ${title}`);
 
-    // 2. FIXED: Update the download client payload args here too!
+    // 2. ADDED: cookiefile flag passed to the stream pipeline too
     const ytdlpProcess = ytDlp.exec(url, {
       output: '-', 
       format: 'bestaudio',
       noPlaylist: true,
+      cookiefile: cookiesPath,
       extractorArgs: 'youtube:player_client=ios,web_creator'
     });
 
@@ -92,11 +96,9 @@ app.post("/extract", apiLimiter, async (req, res) => {
 
   } catch (error) {
     console.error("Metadata discovery failed:", error);
-    return res.status(500).json({ error: "Could not retrieve video information. Device blocked by video provider." });
+    return res.status(500).json({ error: "Could not retrieve video information. Render server rate-limited by YouTube." });
   }
 });
-
-// --- FIXED: Removed the old catch-all route completely ---
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Production server bound and listening on port ${PORT}`);
