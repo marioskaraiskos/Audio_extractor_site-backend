@@ -4,9 +4,30 @@ import { execFile } from "child_process";
 import fs from "fs/promises"; 
 import { existsSync } from "fs";
 import path from "path";
+import ytDlp from 'yt-dlp-exec';
+
+
+const express = require('express');
+const path = require('path');
+const app = express();
+
+// 1. Tell Express to serve the static files from the frontend folder
+// (Adjust 'build' or 'public' depending on what your build folder is named)
+app.use(express.static(path.join(__dirname, '../frontend/build')));
+
+// 2. Handle any requests by sending back the index.html file
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
+});
+
+app.listen(5000, () => console.log('Server running on port 5000'));
+
 
 const app = express();
-const PORT = 5000;
+const port = process.env.PORT || 10000; // Render defaults to port 10000
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Server running on port ${port}`);
+});
 
 app.use(cors());
 app.use(express.json());
@@ -26,11 +47,20 @@ app.post("/extract", (req, res) => {
   const sanitizeTitle = (title) =>
     title.replace(/[\\/:*?"<>|\n\r\t]/g, "").trim() || "audio";
 
-  execFile("yt-dlp", ["--get-title", "--no-warnings", url], async (err, stdout) => {
-    if (err) {
-      console.error("Title fetch error:", err);
-      return res.status(500).json({ error: "Failed to get title" });
-    }
+  // Replace your download execFile block with this:
+ytDlp(url, {
+  extractAudio: true,
+  audioFormat: 'mp3',
+  noPlaylist: true,
+  extractorArgs: 'youtube:player_client=default,-android_sdkless',
+  output: tempPath
+}).then(() => {
+  // Put your file renaming, res.download, and file unlinking logic here!
+  console.log("Download finished successfully!");
+}).catch((error) => {
+  console.error("Download execution error:", error);
+  res.status(500).json({ error: "Download failed" });
+});
 
     const title = sanitizeTitle(stdout);
     const finalName = `${title}.mp3`;
@@ -80,7 +110,6 @@ app.post("/extract", (req, res) => {
       }
     });
   });
-});
 
 // ==========================================
 // FIX: This block keeps your server alive!
