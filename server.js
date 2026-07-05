@@ -55,7 +55,7 @@ app.post("/extract", apiLimiter, async (req, res) => {
       dumpJson: true,
       noPlaylist: true,
       cookies: cookiesPath,
-      extractorArgs: 'youtube:player_client=web,web_creator' 
+      extractorArgs: 'youtube:player_client=default,-android_sdkless' 
     });
 
     const title = sanitizeTitle(meta.title || "audio");
@@ -74,7 +74,7 @@ app.post("/extract", apiLimiter, async (req, res) => {
       noPlaylist: true,
       cookies: cookiesPath,
       noCheckCertificates: true,
-      extractorArgs: 'youtube:player_client=web,web_creator' // Removed 'ios'
+      extractorArgs: 'youtube:player_client=default,-android_sdkless' 
     });
 
     ffmpeg(ytdlpProcess.stdout)

@@ -27,6 +27,9 @@ RUN npm ci --only=production
 # Copy the rest of the application code
 COPY . .
 
+# CRUCIAL ADDITION: Force yt-dlp-exec to use your globally installed system binary
+ENV YT_DLP_PATH=/usr/local/bin/yt-dlp
+
 # Expose the port Render will route traffic to
 EXPOSE 5000
 
