@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+bower_components/
+
+# Environment variables & secrets (CRITICAL)
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Build and Output directories
+dist/
+build/
+out/
+.next/
+
+# System / OS files
+.DS_Store
+Thumbs.db
