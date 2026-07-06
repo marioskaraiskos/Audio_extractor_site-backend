@@ -55,8 +55,10 @@ app.post("/extract", apiLimiter, async (req, res) => {
     noPlaylist: true,
     format: "bestaudio/best",
     noCheckCertificates: true,
-    extractorArgs: "youtube:client=tv",
-};
+    // Explicitly pass node as the runtime and spoof a reliable client
+    jsRuntimes: "node",
+    extractorArgs: "youtube:client=ios",
+  };
 
   let ytdlpProcess = null;
 

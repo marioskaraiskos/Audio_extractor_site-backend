@@ -1,7 +1,7 @@
 # Use a slim Node image as our base
 FROM node:20-slim
 
-# Install system dependencies: Python3 and FFmpeg
+# Install system dependencies: Python3, FFmpeg, and build environments
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     python3 \
@@ -10,8 +10,8 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Explicitly ensure /usr/bin/python points directly to python3 as a fallback
-RUN ln -sf /usr/bin/python3 /usr/bin/python
+# Crucial: Ensure /usr/bin/node is globally accessible to system binaries
+RUN ln -sf /usr/local/bin/node /usr/bin/node
 
 # Download the latest yt-dlp binary directly into the system execution path
 RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp && chmod a+rx /usr/local/bin/yt-dlp
@@ -27,9 +27,7 @@ RUN npm ci --only=production
 COPY . .
 
 # --- HACK TO TRICK YT-DLP-EXEC PACKAGE ---
-# Create the folder where the library looks for its executable
 RUN mkdir -p /app/node_modules/yt-dlp-exec/bin
-# Point that exact path to our working global system binary
 RUN ln -sf /usr/local/bin/yt-dlp /app/node_modules/yt-dlp-exec/bin/yt-dlp
 # ----------------------------------------
 
