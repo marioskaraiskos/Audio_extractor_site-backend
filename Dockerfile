@@ -26,8 +26,12 @@ RUN npm ci --only=production
 # Copy the rest of the application code
 COPY . .
 
-# Force yt-dlp-exec to use your globally installed system binary
-ENV YT_DLP_PATH=/usr/local/bin/yt-dlp
+# --- HACK TO TRICK YT-DLP-EXEC PACKAGE ---
+# Create the folder where the library looks for its executable
+RUN mkdir -p /app/node_modules/yt-dlp-exec/bin
+# Point that exact path to our working global system binary
+RUN ln -sf /usr/local/bin/yt-dlp /app/node_modules/yt-dlp-exec/bin/yt-dlp
+# ----------------------------------------
 
 # Render defaults to port 10000 for web services
 ENV PORT=10000
