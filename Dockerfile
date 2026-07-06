@@ -2,7 +2,6 @@
 FROM node:20-slim
 
 # Install system dependencies: Python3 and FFmpeg
-# Added 'python-is-python3' to fix the binary naming mismatch
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     python3 \
@@ -27,11 +26,12 @@ RUN npm ci --only=production
 # Copy the rest of the application code
 COPY . .
 
-# CRUCIAL ADDITION: Force yt-dlp-exec to use your globally installed system binary
+# Force yt-dlp-exec to use your globally installed system binary
 ENV YT_DLP_PATH=/usr/local/bin/yt-dlp
 
-# Expose the port Render will route traffic to
-EXPOSE 5000
+# Render defaults to port 10000 for web services
+ENV PORT=10000
+EXPOSE 10000
 
 # Start the production backend server
 CMD ["node", "server.js"]

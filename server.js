@@ -53,12 +53,10 @@ app.post("/extract", apiLimiter, async (req, res) => {
   const ytDlpOptions = {
     cookies: cookiesPath,
     noPlaylist: true,
+    format: "bestaudio/best",
     noCheckCertificates: true,
-    // Emulate both iOS and standard Android device requests
-    extractorArgs: 'youtube:player_client=ios,android',
-    // Mimic an actual iOS mobile device layout
-    userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1'
-  };
+    extractorArgs: "youtube:client=tv",
+};
 
   let ytdlpProcess = null;
 
@@ -66,7 +64,7 @@ app.post("/extract", apiLimiter, async (req, res) => {
     // 1. Fetch metadata using the updated mobile spoof signatures
     const meta = await ytDlp(url, {
       ...ytDlpOptions,
-      dumpJson: true,
+      dumpSingleJson: true,
     });
 
     const title = sanitizeTitle(meta.title || "audio");
